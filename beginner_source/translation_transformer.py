@@ -1,25 +1,24 @@
 """
-Language Translation with nn.Transformer and torchtext
+nn.Transformer와 torchtext를 이용한 언어 번역
 ======================================================
 
-This tutorial shows, how to train a translation model from scratch using
-Transformer. We will be using `Multi30k <http://www.statmt.org/wmt16/multimodal-task.html#task1>`__ 
-dataset to train a German to English translation model.
+이 튜토리얼은 Transformer를 사용하여 처음부터 번역 모델을 학습시키는 방법을 보여줍니다.
+우리는 독일어에서 영어로 번역하는 모델을 학습시키기 위해,
+`Multi30k <http://www.statmt.org/wmt16/multimodal-task.html#task1>` 데이터셋을 사용할 것입니다.
 """
 
 
 ######################################################################
-# Data Sourcing and Processing
+# 데이터 소싱 및 처리
 # ----------------------------
 #
-# `torchtext library <https://pytorch.org/text/stable/>`__ has utilities for creating datasets that can be easily
-# iterated through for the purposes of creating a language translation
-# model. In this example, we show how to use torchtext's inbuilt datasets, 
-# tokenize a raw text sentence, build vocabulary, and numericalize tokens into tensor. We will use
-# `Multi30k dataset from torchtext library <https://pytorch.org/text/stable/datasets.html#multi30k>`__
-# that yields a pair of source-target raw sentences. 
-#
-#
+# `torchtext library <https://pytorch.org/text/stable/>` 는 언어 번역 모델을 만들 목적으로
+# 쉽게 반복할 수 있는 데이터셋을 만드는 유용한 기능이 있습니다.
+# 이 예제에서는, torchtext의 내장된 데이터셋을 사용하고, 원본 문장을 토큰화하고,
+# 어휘를 구축하고, 토큰들을 tensor로 수치화하는 방법을 보여줍니다.
+# 우리는 소스-대상의 가공되지 않은 문장 쌍을 생성하는 
+# `Multi30k dataset from torchtext library <https://pytorch.org/text/stable/datasets.html#multi30k>`
+# 데이터셋을 사용할 것입니다.
 
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
@@ -35,7 +34,7 @@ token_transform = {}
 vocab_transform = {}
 
 
-# Create source and target language tokenizer. Make sure to install the dependencies.
+# 소스와 대상 언어의 토크나이저를 만듭니다. 패키지 라이브러리를 설치해야 합니다.
 # pip install -U spacy
 # python -m spacy download en_core_web_sm
 # python -m spacy download de_core_news_sm
@@ -43,46 +42,46 @@ token_transform[SRC_LANGUAGE] = get_tokenizer('spacy', language='de_core_news_sm
 token_transform[TGT_LANGUAGE] = get_tokenizer('spacy', language='en_core_web_sm')
 
 
-# helper function to yield list of tokens
+# 토큰 목록을 생성하는 도움 함수
 def yield_tokens(data_iter: Iterable, language: str) -> List[str]:
     language_index = {SRC_LANGUAGE: 0, TGT_LANGUAGE: 1}
 
     for data_sample in data_iter:
         yield token_transform[language](data_sample[language_index[language]])
 
-# Define special symbols and indices
+# 특수 기호와 인덱스를 정의합니다.
 UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = 0, 1, 2, 3
-# Make sure the tokens are in order of their indices to properly insert them in vocab
+# 토큰들이 어휘에 올바르게 삽입될 수 있도록 해당 인덱스가 순서대로 정렬되었는지 확인합니다.
 special_symbols = ['<unk>', '<pad>', '<bos>', '<eos>']
  
 for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
-    # Training data Iterator 
+    # 학습 데이터 반복자
     train_iter = Multi30k(split='train', language_pair=(SRC_LANGUAGE, TGT_LANGUAGE))
-    # Create torchtext's Vocab object 
+    # torchtext의 어휘 객체를 생성합니다.
     vocab_transform[ln] = build_vocab_from_iterator(yield_tokens(train_iter, ln),
                                                     min_freq=1,
                                                     specials=special_symbols,
                                                     special_first=True)
 
-# Set UNK_IDX as the default index. This index is returned when the token is not found. 
-# If not set, it throws RuntimeError when the queried token is not found in the Vocabulary. 
+# UNK_IDX를 기본 인덱스로 설정합니다. 이 인덱스는 토큰을 찾을 수 없을 때 반환됩니다. 
+# 만약 설정하지 않으면, 요청된 토큰을 찾을 수 없을 때 런타임 에러가 발생합니다.
 for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
   vocab_transform[ln].set_default_index(UNK_IDX)
 
 ######################################################################
-# Seq2Seq Network using Transformer
+# Transformer를 이용한 Seq2Seq 네트워크
 # ---------------------------------
 #
-# Transformer is a Seq2Seq model introduced in `“Attention is all you
-# need” <https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf>`__
-# paper for solving machine translation tasks. 
-# Below, we will create a Seq2Seq network that uses Transformer. The network
-# consists of three parts. First part is the embedding layer. This layer converts tensor of input indices
-# into corresponding tensor of input embeddings. These embedding are further augmented with positional
-# encodings to provide position information of input tokens to the model. The second part is the 
-# actual `Transformer <https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html>`__ model. 
-# Finally, the output of Transformer model is passed through linear layer
-# that give un-normalized probabilities for each token in the target language. 
+# Transformer는 기계 번역 과제를 해결하기 위한 `“Attention is all you need” 
+# <https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf>`
+# 논문에서 소개된 Seq2Seq 모델입니다.
+# 아래에서, 우리는 Transformer를 사용한 Seq2Seq 네트워크를 만들 것입니다.
+# 네트워크는 세 부분으로 구성됩니다. 첫번째 파트는 임베딩 레이어입니다.
+# 이 레이어는 입력 인덱스 tensor를 이에 대응하는 입력 임베딩 tensor로 변환합니다. 이러한 임베딩은 
+# 모델에 입력 토큰의 위치 정보를 제공하기 위한 위치 인코딩을 통해 더욱 강화됩니다. 두번째 파트는
+# 실제 `Transformer <https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html>` 모델입니다.
+# 마지막으로, Transformer 모델의 출력은 대상 언어의 각 토큰에 대한 정규화되지 않은 확률값을 제공하는
+# 선형 레이어를 통과합니다.
 #
 
 
@@ -93,7 +92,7 @@ from torch.nn import Transformer
 import math
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# helper Module that adds positional encoding to the token embedding to introduce a notion of word order.
+# 토큰 임베딩에 위치 인코딩을 추가하여 단어 순서 개념을 도입하는 도움 모듈
 class PositionalEncoding(nn.Module):
     def __init__(self,
                  emb_size: int,
@@ -113,7 +112,7 @@ class PositionalEncoding(nn.Module):
     def forward(self, token_embedding: Tensor):
         return self.dropout(token_embedding + self.pos_embedding[:token_embedding.size(0), :])
 
-# helper Module to convert tensor of input indices into corresponding tensor of token embeddings
+# 입력 인덱스 tensor를 이에 대응하는 토큰 임베딩 tensor로 변환하는 도움 모듈
 class TokenEmbedding(nn.Module):
     def __init__(self, vocab_size: int, emb_size):
         super(TokenEmbedding, self).__init__()
@@ -123,7 +122,7 @@ class TokenEmbedding(nn.Module):
     def forward(self, tokens: Tensor):
         return self.embedding(tokens.long()) * math.sqrt(self.emb_size)
 
-# Seq2Seq Network 
+# Seq2Seq 네트워크
 class Seq2SeqTransformer(nn.Module):
     def __init__(self,
                  num_encoder_layers: int,
@@ -172,9 +171,9 @@ class Seq2SeqTransformer(nn.Module):
 
 
 ######################################################################
-# During training, we need a subsequent word mask that will prevent model to look into
-# the future words when making predictions. We will also need masks to hide
-# source and target padding tokens. Below, let's define a function that will take care of both. 
+# 학습 중에는, 예측할 때 모델이 미래의 단어들을 미리 보지 못하게 차단하는 
+# 후속 단어 마스크가 필요합니다. 또한 소스 및 소스와 대상 패딩 토큰들을 숨기기 위한
+# 마스크도 필요합니다. 아래에서, 둘 다 처리할 함수를 정의하겠습니다.
 #
 
 
@@ -197,8 +196,8 @@ def create_mask(src, tgt):
 
 
 ######################################################################
-# Let's now define the parameters of our model and instantiate the same. Below, we also 
-# define our loss function which is the cross-entropy loss and the optmizer used for training.
+# 이제 모델의 매개변수를 정의하고 이를 이용하여 인스턴스를 만듭니다. 아래에서 
+# 학습에 사용되는 교차 엔트로피 손실 함수와 옵티마이저를 또한 정의합니다.
 #
 torch.manual_seed(0)
 
@@ -225,19 +224,19 @@ loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
 
 ######################################################################
-# Collation
+# 콜레이션(Collation)
 # ---------
 #   
-# As seen in the ``Data Sourcing and Processing`` section, our data iterator yields a pair of raw strings. 
-# We need to convert these string pairs into the batched tensors that can be processed by our ``Seq2Seq`` network 
-# defined previously. Below we define our collate function that convert batch of raw strings into batch tensors that
-# can be fed directly into our model.   
+# ``데이터 소싱 및 처리`` 섹션에서 볼 수 있듯이, 데이터 반복자는 원본 문자열들의 쌍을 생성합니다.
+# 이러한 문자열 쌍들이 이전에 정의된 ``Seq2Seq`` 네트워크에 의해 처리될 수 있도록 배치화된 tensor로 
+# 변환해야 합니다. 아래에서는 원본 문자열들의 배치를 모델에 바로 넣을 수 있는 배치 tensor로 변환하는
+# 콜릿(collate) 함수를 정의합니다.  
 #
 
 
 from torch.nn.utils.rnn import pad_sequence
 
-# helper function to club together sequential operations
+# 순차적인 연산들을 결합하는 도움 함수
 def sequential_transforms(*transforms):
     def func(txt_input):
         for transform in transforms:
@@ -245,13 +244,13 @@ def sequential_transforms(*transforms):
         return txt_input
     return func
 
-# function to add BOS/EOS and create tensor for input sequence indices
+# 입력 시퀀스 인덱스에 대해 BOS와 EOS를 추가하고 tensor를 만드는 함수
 def tensor_transform(token_ids: List[int]):
     return torch.cat((torch.tensor([BOS_IDX]), 
                       torch.tensor(token_ids), 
                       torch.tensor([EOS_IDX])))
 
-# src and tgt language text transforms to convert raw strings into tensors indices
+# 소스 및 대상 언어 텍스트 변환을 통해 원본 문자열을 tensor 인덱스로 변환
 text_transform = {}
 for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
     text_transform[ln] = sequential_transforms(token_transform[ln], #Tokenization
@@ -259,7 +258,7 @@ for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
                                                tensor_transform) # Add BOS/EOS and create tensor
 
 
-# function to collate data samples into batch tesors
+# 데이터 샘플들을 배치 tensor들로 모으는 함수
 def collate_fn(batch):
     src_batch, tgt_batch = [], []
     for src_sample, tgt_sample in batch:
@@ -271,8 +270,7 @@ def collate_fn(batch):
     return src_batch, tgt_batch
     
 ######################################################################
-# Let's define training and evaluation loop that will be called for each 
-# epoch.
+# 각 에포크에 대해 호출될 학습 및 평가 루프를 정의합니다.
 #
 
 from torch.utils.data import DataLoader
@@ -329,7 +327,7 @@ def evaluate(model):
     return losses / len(val_dataloader)
 
 ######################################################################
-# Now we have all the ingredients to train our model. Let's do it!
+# 이제 모델을 학습할 때 필요한 모든 요소가 마련되었습니다. 학습을 진행해봅시다!
 #
 
 from timeit import default_timer as timer
@@ -343,7 +341,7 @@ for epoch in range(1, NUM_EPOCHS+1):
     print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val loss: {val_loss:.3f}, "f"Epoch time = {(end_time - start_time):.3f}s"))
 
 
-# function to generate output sequence using greedy algorithm 
+# 탐욕 알고리즘을 사용하여 출력 시퀀스를 생성하는 함수
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
     src = src.to(DEVICE)
     src_mask = src_mask.to(DEVICE)
@@ -367,7 +365,7 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
     return ys
 
 
-# actual function to translate input sentence into target language
+# 실제로 입력 문장을 대상 언어로 번역하는 함수
 def translate(model: torch.nn.Module, src_sentence: str):
     model.eval()
     src = text_transform[SRC_LANGUAGE](src_sentence).view(-1, 1)
@@ -385,9 +383,9 @@ print(translate(transformer, "Eine Gruppe von Menschen steht vor einem Iglu ."))
 
 
 ######################################################################
-# References
+# 참고문헌
 # ----------
 #
-# 1. Attention is all you need paper.
+# 1. Attention is all you need 논문.
 #    https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf
-# 2. The annotated transformer. https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding
+# 2. 주석이 달린 transformer. https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding
