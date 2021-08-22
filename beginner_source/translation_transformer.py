@@ -16,7 +16,7 @@ nn.Transformer와 torchtext를 이용한 언어 번역
 # 쉽게 반복할 수 있는 데이터셋을 만드는 유용한 기능이 있습니다.
 # 이 예제에서는, torchtext의 내장된 데이터셋을 사용하고, 원본 문장을 토큰화하고,
 # 어휘를 구축하고, 토큰들을 tensor로 수치화하는 방법을 보여줍니다.
-# 우리는 소스-대상의 가공되지 않은 문장 쌍을 생성하는 
+# 우리는 가공되지 않은 소스-대상 쌍을 생성하는 
 # `Multi30k dataset from torchtext library <https://pytorch.org/text/stable/datasets.html#multi30k>`
 # 데이터셋을 사용할 것입니다.
 
@@ -77,11 +77,10 @@ for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
 # 논문에서 소개된 Seq2Seq 모델입니다.
 # 아래에서, 우리는 Transformer를 사용한 Seq2Seq 네트워크를 만들 것입니다.
 # 네트워크는 세 부분으로 구성됩니다. 첫번째 파트는 임베딩 레이어입니다.
-# 이 레이어는 입력 인덱스 tensor를 이에 대응하는 입력 임베딩 tensor로 변환합니다. 이러한 임베딩은 
-# 모델에 입력 토큰의 위치 정보를 제공하기 위한 위치 인코딩을 통해 더욱 강화됩니다. 두번째 파트는
-# 실제 `Transformer <https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html>` 모델입니다.
-# 마지막으로, Transformer 모델의 출력은 대상 언어의 각 토큰에 대한 정규화되지 않은 확률값을 제공하는
-# 선형 레이어를 통과합니다.
+# 이 레이어는 입력 인덱스 tensor를 이에 대응하는 입력 임베딩 tensor로 변환합니다. 
+# 이러한 임베딩은 모델에 입력 토큰의 위치 정보를 제공하기 위한 위치 인코딩을 통해 더욱 강화됩니다. 
+# 두번째 파트는 실제 `Transformer <https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html>` 모델입니다.
+# 마지막으로, Transformer 모델의 출력은 대상 언어의 각 토큰에 대한 정규화되지 않은 확률값을 제공하는 선형 레이어를 통과합니다.
 #
 
 
