@@ -13,8 +13,8 @@ nn.Transformer와 torchtext를 이용한 언어 번역
 # 데이터 소싱 및 처리
 # --------------------
 #
-# `torchtext 라이브러리 <https://pytorch.org/text/stable/>`__\ 는 언어 번역 모델을 만들 목적으로
-# 쉽게 반복할 수 있는 데이터셋을 만드는 유용한 기능이 있습니다.
+# `torchtext 라이브러리 <https://pytorch.org/text/stable/>`__\ 는 언어 번역 모델을 위한
+# 데이터셋을 만들 수 있는 유틸리티 함수들을 제공합니다.
 # 이 예제에서는, torchtext의 내장된 데이터셋을 사용하고, 원본 문장을 토큰화하고,
 # 어휘를 구축하고, 토큰들을 tensor로 수치화하는 방법을 보여줍니다.
 # 가공되지 않은 원본(source)-대상(target) 쌍을 생성하기 위해서
@@ -36,7 +36,7 @@ token_transform = {}
 vocab_transform = {}
 
 
-# 원본(source)과 대상(target) 언어의 토크나이저를 만듭니다. 패키지 라이브러리를 설치해야 합니다.
+# 원본과 대상 언어의 토크나이저를 만들기 위해 관련 패키지를 설치해야 합니다.
 # pip install -U spacy
 # python -m spacy download en_core_web_sm
 # python -m spacy download de_core_news_sm
@@ -79,10 +79,10 @@ for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
 # 논문에서 소개된 Seq2Seq 모델입니다.
 # 아래에서, Transformer를 사용한 Seq2Seq 네트워크를 만들어 볼 것입니다.
 # 네트워크는 총 세 부분으로 구성됩니다. 첫번째 파트는 임베딩 레이어입니다.
-# 이 레이어는 입력 인덱스 tensor를 이에 대응하는 입력 임베딩 tensor로 변환합니다. 
+# 임베딩 레이어는 입력 인덱스 tensor를 이에 대응하는 입력 임베딩 tensor로 변환합니다. 
 # 이러한 임베딩은 모델에 입력 토큰의 위치 정보를 제공하기 위한 위치 인코딩과 더해집니다. 
 # 두번째 파트는 실제 `Transformer <https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html>`__ 모델입니다.
-# 마지막으로, Transformer 모델의 출력은 대상(target) 언어의 각 토큰에 대한 정규화되지 않은 확률값을 제공하는 선형 레이어를 통과합니다.
+# 마지막으로, Transformer 모델의 출력은 대상 언어의 각 토큰에 대한 정규화되지 않은 확률값을 제공하는 선형 레이어를 통과합니다.
 #
 
 
@@ -173,7 +173,7 @@ class Seq2SeqTransformer(nn.Module):
 
 ######################################################################
 # 학습 중에는, 예측할 때 모델이 미래의 단어들을 미리 보지 못하게 차단하는 
-# 후속 단어 마스크가 필요합니다. 또한 원본(source) 및 대상(target) 패딩 토큰들을 숨기기 위한
+# 후속 단어 마스크가 필요합니다. 또한 원본 및 대상 패딩 토큰들을 숨기기 위한
 # 마스크도 필요합니다. 아래에서, 둘 다 처리할 함수를 정의하겠습니다.
 #
 
@@ -251,7 +251,7 @@ def tensor_transform(token_ids: List[int]):
                       torch.tensor(token_ids), 
                       torch.tensor([EOS_IDX])))
 
-# 원본(source) 및 대상(target) 언어 텍스트 변환을 통해 원본 문자열을 tensor 인덱스로 변환
+# 원본 및 대상 언어 텍스트 변환을 통해 원본 문자열을 tensor 인덱스로 변환
 text_transform = {}
 for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
     text_transform[ln] = sequential_transforms(token_transform[ln], # 토큰화
@@ -366,7 +366,7 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
     return ys
 
 
-# 실제로 입력 문장을 대상(target) 언어로 번역하는 함수
+# 실제로 입력 문장을 대상 언어로 번역하는 함수
 def translate(model: torch.nn.Module, src_sentence: str):
     model.eval()
     src = text_transform[SRC_LANGUAGE](src_sentence).view(-1, 1)
