@@ -2,21 +2,22 @@
 nn.Transformer와 torchtext를 이용한 언어 번역
 ======================================================
 
-이 튜토리얼에서는 Transformer를 사용하여 처음부터 번역 모델을 학습시키는 방법을 알아보겠습니다.
-독일어(German)에서 영어(English)로 번역하는 모델을 학습시키기 위해,
-`Multi30k <http://www.statmt.org/wmt16/multimodal-task.html#task1>`__ 데이터셋을 사용하겠습니다.
+- 이 튜토리얼에서는 Transformer를 사용하여 처음부터 번역 모델을 학습시키는 방법을 알아보겠습니다.
+- 독일어(German)에서 영어(English)로 번역하는 모델을 학습시키기 위해, `Multi30k 
+  <http://www.statmt.org/wmt16/multimodal-task.html#task1>`__\ 데이터셋을 사용하겠습니다.
+
 """
 
 
 ######################################################################
 # 데이터 소싱 및 처리
-# -------------------
+# --------------------
 #
 # `torchtext 라이브러리 <https://pytorch.org/text/stable/>`__\ 는 언어 번역 모델을 만들 목적으로
 # 쉽게 반복할 수 있는 데이터셋을 만드는 유용한 기능이 있습니다.
 # 이 예제에서는, torchtext의 내장된 데이터셋을 사용하고, 원본 문장을 토큰화하고,
 # 어휘를 구축하고, 토큰들을 tensor로 수치화하는 방법을 보여줍니다.
-# 가공되지 않은 소스(source)-대상(target) 쌍을 생성하기 위해서
+# 가공되지 않은 원본(source)-대상(target) 쌍을 생성하기 위해서
 # `Multi30k dataset from torchtext library <https://pytorch.org/text/stable/datasets.html#multi30k>`__
 # 데이터셋을 사용하겠습니다.
 #
@@ -35,7 +36,7 @@ token_transform = {}
 vocab_transform = {}
 
 
-# 소스(source)와 대상(target) 언어의 토크나이저를 만듭니다. 패키지 라이브러리를 설치해야 합니다.
+# 원본(source)과 대상(target) 언어의 토크나이저를 만듭니다. 패키지 라이브러리를 설치해야 합니다.
 # pip install -U spacy
 # python -m spacy download en_core_web_sm
 # python -m spacy download de_core_news_sm
@@ -172,7 +173,7 @@ class Seq2SeqTransformer(nn.Module):
 
 ######################################################################
 # 학습 중에는, 예측할 때 모델이 미래의 단어들을 미리 보지 못하게 차단하는 
-# 후속 단어 마스크가 필요합니다. 또한 소스(source) 및 대상(target) 패딩 토큰들을 숨기기 위한
+# 후속 단어 마스크가 필요합니다. 또한 원본(source) 및 대상(target) 패딩 토큰들을 숨기기 위한
 # 마스크도 필요합니다. 아래에서, 둘 다 처리할 함수를 정의하겠습니다.
 #
 
@@ -250,15 +251,15 @@ def tensor_transform(token_ids: List[int]):
                       torch.tensor(token_ids), 
                       torch.tensor([EOS_IDX])))
 
-# 소스(source) 및 대상(target) 언어 텍스트 변환을 통해 원본 문자열을 tensor 인덱스로 변환
+# 원본(source) 및 대상(target) 언어 텍스트 변환을 통해 원본 문자열을 tensor 인덱스로 변환
 text_transform = {}
 for ln in [SRC_LANGUAGE, TGT_LANGUAGE]:
     text_transform[ln] = sequential_transforms(token_transform[ln], # 토큰화
                                                vocab_transform[ln], # 수치화
-                                               tensor_transform) # BOS/EOS 추가 맟 tensor 생성
+                                               tensor_transform) # BOS/EOS 추가 및 tensor 생성
 
 
-# 데이터 샘플들을 배치 tensor들로 모으는 함수
+# 데이터 샘플들을 배치 tensor로 모으는 함수
 def collate_fn(batch):
     src_batch, tgt_batch = [], []
     for src_sample, tgt_sample in batch:
@@ -270,7 +271,7 @@ def collate_fn(batch):
     return src_batch, tgt_batch
     
 ######################################################################
-# 각 에포크에 대해 호출될 학습 및 평가 루프를 정의합니다.
+# 각 에폭에 대해 호출될 학습 및 평가 루프를 정의합니다.
 #
 
 from torch.utils.data import DataLoader
